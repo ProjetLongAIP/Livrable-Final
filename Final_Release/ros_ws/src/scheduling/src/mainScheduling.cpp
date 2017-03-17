@@ -32,8 +32,9 @@ ros::Rate loop_rate(10);
 std::string name = ros::this_node::getName();
 
 // Souscription 
-ros::Subscriber subMode = nh.subscribe("/ordonnancement/On_Off",10,changeModeCallBack);
-
+ros::Subscriber subMode = nh.subscribe("/ordonnancement/On_Off",10,changeModeCallBack); //abonnement au topic qui controle la mise en route de l'ordonnanceur
+	//Le publisher qui publie sur ce topic se trouve dans le noeud controle_locale
+	
 // Initialisation de "l'ordonnanceur"
 Scheduler myScheduler;
 if(myScheduler.init(nh,argv[0]))
