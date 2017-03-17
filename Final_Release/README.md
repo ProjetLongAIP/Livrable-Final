@@ -77,7 +77,7 @@ Special thanks to them for their previous work on this project
 8. **'setup' will create and organize your workinspace**
 	- At the end of 'setup' execution you should get the following message
 
-	````
+	```
 	-----------------------------------------------------------
 	      Final catkin_make done in 'Working_Folder_TER
 	          The simuation is ready to be launched
