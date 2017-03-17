@@ -90,15 +90,23 @@ Special thanks to them for their previous work on this project
 
 10. **If you are using the real transport network, ignore this step. To run the simulation, open a new terminal and place you in  ~/[Working_Folder]**
 
+	- to launch the simulation go to the Working folder you created in the last step
+	Example:
+	```
+	$ cd Working_Folder_TER/
+	```
+	Now you can launch the simulation by using one of the foolowing command :
+	
 	- You could do either begin with an empty cell and insert shuttles with the 'Shuttle' button:
 	```
-	$ ./simulation
+	$ ./launch.sh
+	or
+	$ ./launch.sh SimulationGauche
+	or
+	$ ./launch.sh SimulationDroite
 	```
-	- Or initialize the simulation with shuttles on the rails:
-	```
-	$ ./simulation 1 2 5 6 (or any number of shuttle between 1 and 6 seperated with a space)
-	```
-	- If ever the simulation doesn't lauch successfully stop it by doing CTRL+C and try a second time the previous commands before restarting all the steps.
+	
+	- If ever the simulation doesn't launch successfully the first time stop it by doing CTRL+C and try a second time the previous commands before restarting all the steps.
 	
  
 11. **Click on the 'Play' button to start the simulation**
