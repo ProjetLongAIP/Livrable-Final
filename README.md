@@ -1,6 +1,8 @@
 # Livrable-Final
 Version Final du Projet Long ENSEEIHT 2017
 
+- Look at README.md in Final_Release for setup instructions
+
 # Projet Long ENSEEIHT - GEA Department - 2017 - projetlong.aip@gmail.com
 
 > Command of a transport network and it simulation & Interaction of the transport network 
