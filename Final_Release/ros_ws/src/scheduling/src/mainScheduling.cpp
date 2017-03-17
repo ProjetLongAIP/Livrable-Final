@@ -6,14 +6,15 @@
 #include <std_msgs/Bool.h>
 
 
-bool on = false ;
+bool on = false ;  //Variable globale pour servant à la mise en marhce du mode auto par l'interface utilisateur
 
 
+//Callback du message recu par l'ordonnacement servant à mettre à jour la variable qui commande l'activation du noeud
 void changeModeCallBack(const std_msgs::Bool::ConstPtr& msg)
 {
 
-on = msg->data;
-ROS_INFO(" reception message : %d ",msg->data); 
+on = msg->data;						
+//ROS_INFO(" reception message : %d ",msg->data); 
 
 }
 
@@ -25,8 +26,6 @@ int main (int argc, char **argv)
 // Initialisation du noeud
 ros::init(argc, argv, "ordonnancement");	
 ros::NodeHandle nh;
-
-ROS_INFO(" Path exe : %s " , argv[0] ) ;
 
 // Définition de la fréquence
 ros::Rate loop_rate(10);
@@ -42,23 +41,23 @@ if(myScheduler.init(nh,argv[0]))
 
 	ROS_INFO("Noeud ordonnancement initialise : %s", name.c_str());
 
-	sleep(1);
+	sleep(1); // sert à laisser le temps au rosmaster d'initialiser correctement l'ensemble des publishers et subscribers. Sans ca il y a un risque de ne peas publier ou recevoir le premier message
 
   	while (ros::ok())
   		{
 		
-		if (on)
+		if (on) //Mode Auto Activé
 			{
 			//ROS_INFO(" Ordo Start ");			
 			myScheduler.launchNextSchedule();
 			ros::spinOnce();
 			loop_rate.sleep();
 			}
-		else	
+		else	// Mode Auto Arreté, // On reste a l'écoute...
 			{ 
 			//ROS_INFO(" Ordo Stop ");
 			ros::spinOnce();
-			loop_rate.sleep();
+			loop_rate.sleep(); 
 			}
   		}
 	}
