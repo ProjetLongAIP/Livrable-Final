@@ -6,6 +6,7 @@
 // Construteur
 Scheduler::Scheduler()
 {
+		// Initilisation de quelques valeurs par défaut
 	numberOfProduct = 0;
 	nextCount = 0;
 	lastLaunchDate = 0;
@@ -25,14 +26,15 @@ bool Scheduler::init(ros::NodeHandle nh, std::string executionPath)
 	pubCreateShuttle = nh.advertise<scheduling::Msg_LoadShuttle>("/scheduling/NextProduct",10);
 	pubDelShuttle = nh.advertise<std_msgs::Int32>("/commande_navette/DelShuttle",10);
 
-// Récupération du chemin vers le Working_Folder
+// Récupération du chemin vers le Working_Folder, permet de travailler en chemin relatif
 int count = 0 ;
 int pos = 0 ;
-while (count < 4)
+while (count < 4) // le chemin sous linux est normalement standart d'où la présence de la constante 4, il est possible qu'il faille faire évoluer ce point si ce n'est plus le cas
 	{
-	if(executionPath[pos] == '/') count++;
-	pos++;
+	if(executionPath[pos] == '/') count++;  // on cherche dans la chaine le 4ème '/' qui permet de récupérer le chemin absolu du Working Folder
+	pos++;					// Cela est normalement garanti par le faite que le setup install toujours dans le dossier racine de l'utilisateur
 	}
+	
 std::string Working_Folder = executionPath.substr(0,pos);
 ROS_INFO ("$%s$", Working_Folder.c_str()) ;
 
@@ -43,42 +45,48 @@ ROS_INFO ("$%s$", Working_Folder.c_str()) ;
 configFile = Working_Folder + "/ProductConfiguration.config";
 logFile = Working_Folder + "/Statistic.txt";
 
-std::ifstream streamConfigFile(configFile.c_str(), std::ios::in);
+std::ifstream streamConfigFile(configFile.c_str(), std::ios::in); 	// Ouverture en lecture seule du fichier de configuration
 	
-if (streamConfigFile)
+	// Pour comprendre la suite de la lecture du fichier, il peut etre utile de se référer à http://www.cplusplus.com/reference/iolibrary/
+	
+if (streamConfigFile)	//Si l'ouverture à reussi
 {
-	std::string pNameFF,destinationPart,launchDatePart,jobTimePart,maxShuttlePart,contents;
+	std::string pNameFF,destinationPart,launchDatePart,jobTimePart,maxShuttlePart,contents; // string servant à l'extraction d'information
 
-	//saut des lignes d'entêtes, repèrage du start.
+	//saut des lignes d'entêtes, repèrage du start (on passe toutes les lignes tant que le mot Start n'y figure pas)
+	
 	while(1){
 	std::getline(streamConfigFile,contents);
-	std::size_t found = contents.find("Start");
+	std::size_t found = contents.find("Start"); 
   	if (found!=std::string::npos)
 		{
 		break;
 		}
 	}
+	
 	//Configuration nombre max de shuttle
+	
 	std::getline(streamConfigFile,contents);
 	//ROS_INFO("%s",contents.c_str())	;
-	std::size_t pos0 = contents.find(":");
-	maxShuttlePart = contents.substr(pos0+1);
+	std::size_t pos0 = contents.find(":");   // repérage caractère ':' 
+	maxShuttlePart = contents.substr(pos0+1); // on récupère le string qui se trouve après ':'
 	//ROS_INFO("maxShuttlePart =%s",maxShuttlePart.c_str());
-	maxShuttleNumber = atoi( maxShuttlePart.c_str());
+	maxShuttleNumber = atoi( maxShuttlePart.c_str()); // atoi = conversion vers integer !
 	ROS_INFO("maxShuttleNumber = %d",maxShuttleNumber);
 
 	//Configuration temps entre lancement
+	
 	std::getline(streamConfigFile,contents);
 	//ROS_INFO("%s",contents.c_str())	;
-	std::size_t pos1 = contents.find(":");
+	std::size_t pos1 = contents.find(":"); // même idée que précedemment 
 	launchDatePart = contents.substr(pos1+1);
 	
-	char * cstr1 = new char [launchDatePart.length()+1]; //
+	char * cstr1 = new char [launchDatePart.length()+1]; // 
   	std::strcpy (cstr1, launchDatePart.c_str());	// création objet cstring
 
   		// cstr now contains a c-string copy of str
 		int n1 = 0; //compteur sur les dates de lancement 
- 	 	char * p1 = std::strtok (cstr1," "); // cf strtok sur cplusplus.com, permet un découpage du cstring
+ 	 	char * p1 = std::strtok (cstr1," "); // cf strtok sur cplusplus.com, permet un découpage du cstring fonction de l'espace
   		while (p1!=0)
   			{
     			//ROS_INFO ("p1 = %s",p1) ;
@@ -88,23 +96,24 @@ if (streamConfigFile)
   			}
   		delete[] cstr1; // comme la création est dynamique, on supprime l'objet pour libèrer la mémoire
 	
-
+	//Configuration Produits
+	
 	while (std::getline(streamConfigFile, contents))
 		{
-		if (contents.find(':') != std::string::npos )
+		if (contents.find(':') != std::string::npos )   // Per ne prendre en considération que les lignes renseignés, ( dans les faits qui contiennent au moins un ':')
 			{
 			
 			//ROS_INFO("%s",contents.c_str())	;
-			std::size_t pos2 = contents.find(":");
-			std::size_t pos3 = contents.find_last_of(":");
+			std::size_t pos2 = contents.find(":"); // même idée que précedemment 
+			std::size_t pos3 = contents.find_last_of(":"); // même idée que précedemment 
 		
-			pNameFF = contents.substr(0,pos2);
+			pNameFF = contents.substr(0,pos2);	// Recupération nom produit
 			ROS_INFO("Product %s",pNameFF.c_str());
-			destinationPart = contents.substr(pos2+1,pos3-pos2-1);
+			destinationPart = contents.substr(pos2+1,pos3-pos2-1);  //recupération du string correspondant aux destinations sur la ligne produit
 			//ROS_INFO("destination part =%s",destinationPart.c_str());
-			jobTimePart = contents.substr(pos3+1);
+			jobTimePart = contents.substr(pos3+1); // récupération du string correspondant aux temps des taches sur la ligne produit
 			//ROS_INFO("jobTimePart =%s",jobTimePart.c_str());
-			int destination[10];
+			int destination[10]; // initialisation des tableaux locaux destination et Jobtime, il serviront a crée l'objet Produit
 			int jobTime[10];
 			int manRSize = 0; //manufacturing range size of the produit = number of operation
 
@@ -119,7 +128,7 @@ if (streamConfigFile)
 			int n2 = 0; //compteur sur les destinations
 			int n3 = 0; //compteur sur les temps de fabrications
 	 	 	
-
+			// même principe que plus haut
 			char * p2 = std::strtok (cstr2," ");
 	  		while (p2!=NULL)
 	  			{
@@ -150,15 +159,16 @@ if (streamConfigFile)
 			//ROS_INFO("CharNAME = %d",charName);
 			int pNumber = atoi(&charName) * 10 ; 
 			//ROS_INFO("pNumber = %d",pNumber);
-			numberOfProduct++;
-			initProduct(pNameFF,destination[0], pNumber, manRSize,numberOfProduct);
+			numberOfProduct++; // on compte le nombre de produit 
+			initProduct(pNameFF,destination[0], pNumber, manRSize,numberOfProduct);  // initialisation de l'objet produit
 			}
-		
 		}
+	// Fin config produit 
+	
 	ROS_INFO("Number of Product = %d", numberOfProduct);
-	iteratorPMap = ProductsMap.begin();
-	nextCount = numberOfProduct-1; // Permet de bien placer les delays dans launch next schedule
-	client_simRosGetInfo.call(srv_GetInfoVREP);
+	iteratorPMap = ProductsMap.begin(); // initilise l'iterateur sur la collection de produit
+	nextCount = numberOfProduct-1; // Permet de bien placer les delays dans launch next schedule, on va effectuer le délays entre le dernier et le premier produit avant la lancement du premier produit
+	client_simRosGetInfo.call(srv_GetInfoVREP); //Recupération des infos sur la simulation Vrep ( temps de simulation notamment)
 	lastLaunchDate = srv_GetInfoVREP.response.simulationTime; //Initialise le temps de simulation
 	
 	streamConfigFile.close(); //fermeture du fichier ProductConfiguration.txt ouvert en lecture//
@@ -166,7 +176,7 @@ if (streamConfigFile)
 	
 	//Creation du fichier de statistique :
 	
-	std::ofstream StatsFile(logFile.c_str(), std::ios::out | std::ios::app);
+	std::ofstream StatsFile(logFile.c_str(), std::ios::out | std::ios::app); // ouverture en append du fichier Statistic.txt, il est crée si inexistant
 	if(StatsFile)  // si l'ouverture a réussi...
 	        {
 		//Récupération date de lancement//////////////////////
@@ -203,7 +213,7 @@ void Scheduler::launchNextSchedule(){
 if (maxShuttleNumber >0)
 	{
 
-	int nextDelay = scheduledLaunchDate[nextCount];
+	int nextDelay = scheduledLaunchDate[nextCount]; // définition next delays 
 
 	// Récupération temps VREP ////////////// SERVICE simRosGetInfo de VREP ////////////
 
@@ -216,9 +226,9 @@ if (maxShuttleNumber >0)
 		{
 
 		ROS_INFO("Execution de launchNextSchedule (launch date reach)");
-		lastLaunchDate = srv_GetInfoVREP.response.simulationTime;
+		lastLaunchDate = srv_GetInfoVREP.response.simulationTime;	// récupération temps de simulation
 		
-		if (iteratorPMap == ProductsMap.end()) 
+		if (iteratorPMap == ProductsMap.end()) // permet de replacer l'iterateur en début de map si celui-ci se trouve en end ( après le dernier élément)
 			{
 
 			iteratorPMap = ProductsMap.begin();
@@ -226,8 +236,11 @@ if (maxShuttleNumber >0)
 
 			}
 
+		// Récupération des information sur le produit
 		Product* productPointer;
 		productPointer = iteratorPMap->second;	
+		
+		//Creation du message de lancement de produit destiné à la commande_locale
 		scheduling::Msg_LoadShuttle mymsg;
 		mymsg.shuttleType = 'F';
 		mymsg.firstDestination = productPointer->firstDestination;
@@ -259,7 +272,7 @@ if (maxShuttleNumber >0)
 		maxShuttleNumber--; 	// diminution du nombre de produit instantiable
 		iteratorPMap++;		// avance dans la map produit
 		nextCount++; 		// permet d'être en phase vis à vis du tableau des temps entre les lancements des produits
-		nextCount = nextCount%numberOfProduct;
+		nextCount = nextCount%numberOfProduct; //permet de revenir à la premier case quand on a fini le tableau 
 		nextDelay = scheduledLaunchDate[nextCount]; // juste pour l'affichage...
 		ROS_INFO("Je vais attendre = %d s VREP avant le lancement du prochain produit (si le nombre de navette max est atteint, je vais attendre qu'une sorte)",nextDelay);
 
@@ -289,23 +302,23 @@ void Scheduler::initProduct(std::string pName, int pFirstDestination, int initPr
 
 // Subscribers Callback (Product end of manifacture)
 
-void Scheduler::productOutCallBack(const std_msgs::Int32::ConstPtr& msg)
+void Scheduler::productOutCallBack(const std_msgs::Int32::ConstPtr& msg) // on recoit le handle de la navette qui sort de la cellule
 {
-	srv_GetShuttleStatus.request.handle = msg->data;
-	client_GetShuttleStatus.call(srv_GetShuttleStatus);
-	client_simRosGetInfo.call(srv_GetInfoVREP);
+	srv_GetShuttleStatus.request.handle = msg->data;	// 
+	client_GetShuttleStatus.call(srv_GetShuttleStatus);	// recupération des infos sur la navette ( service du noeud shuttles)
+	client_simRosGetInfo.call(srv_GetInfoVREP);		// récupération info sur la simulation Vrep
 
-	std::string finalProductName;
-	Product* productPointer;
+	std::string finalProductName;	// nom produit fini
+	Product* productPointer;	// pointer pour recherche dans la collection
 	
-	ROS_INFO ( "srv_GetShuttleStatus.response.product = %d " ,srv_GetShuttleStatus.response.product);
+	//ROS_INFO ( "srv_GetShuttleStatus.response.product = %d " ,srv_GetShuttleStatus.response.product);	
 
 	for (iteratorPMapOut=ProductsMap.begin(); iteratorPMapOut!=ProductsMap.end(); ++iteratorPMapOut)	// On parcours l'ensemble de la collection
 	{
 		productPointer = iteratorPMapOut->second;
 		if ( productPointer->productNumber == (srv_GetShuttleStatus.response.product - productPointer->manRangeSize)) // Trouve le nom du produit fini
 		{
-			ROS_INFO ( "productPointer->manRangeSize = %d ", productPointer->manRangeSize); 
+			//ROS_INFO ( "productPointer->manRangeSize = %d ", productPointer->manRangeSize); 
 			//ROS_INFO ( "j'ai trouvé le nom du produit !!");
 			finalProductName = productPointer->name;
 		}
@@ -326,7 +339,7 @@ void Scheduler::productOutCallBack(const std_msgs::Int32::ConstPtr& msg)
 	else ROS_ERROR("Impossible de creer ou ouvrir le fichier Statistic.txt !");
 	/////////////////////////////////////////////////////////////////////////////////////////////
 
-	// Suppression de la navette du noeud shuttles :
+	// Suppression de la navette dans le noeud shuttles à l'aide d'un message :
 	std_msgs::Int32 msgdel;
 	msgdel.data = msg->data;
 	pubDelShuttle.publish(msgdel);
@@ -334,7 +347,7 @@ void Scheduler::productOutCallBack(const std_msgs::Int32::ConstPtr& msg)
 
 }
 
-void Scheduler::ManualLaunchCallBack(const std_msgs::Bool::ConstPtr& msg)
+void Scheduler::ManualLaunchCallBack(const std_msgs::Bool::ConstPtr& msg) //permet de garder a jour le nombre de navette présente dans le circuit
 {
 if (msg->data) maxShuttleNumber--;
 }
