@@ -1,6 +1,8 @@
 # Livrable-Final
 Version Final du Projet Long ENSEEIHT 2017
+Si vous n'êtes pas familier avec le projet, consulter le fichier ProjetLong2017_Rapport.pdf dans la section documentation.
 
+If you are unfamiliar with this project, please consult ProjetLong2017_Rapport.pdf File in the "Documentation" Folder.
 - Look at README.md in Final_Release for setup instructions
 
 # Projet Long ENSEEIHT - GEA Department - 2017 - projetlong.aip@gmail.com
